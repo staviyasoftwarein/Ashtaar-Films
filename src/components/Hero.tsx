@@ -2,6 +2,9 @@ import { useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
+import { useAsset } from '../hooks/useAsset';
+import { useSetting } from '../hooks/useSetting';
+import { DEFAULT_HERO_FONT, fontFamilyCss } from '../lib/fonts';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -9,6 +12,8 @@ export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLHeadingElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { value: font } = useSetting('hero.font', DEFAULT_HERO_FONT);
+  const { url: videoUrl } = useAsset('preloader', '/preloader.mp4');
 
   useEffect(() => {
     const video = videoRef.current;
@@ -60,6 +65,7 @@ export default function Hero() {
     // Moved overflow-hidden to the parent container to prevent page stretch
     <div id="hero" ref={containerRef} className="relative h-screen w-full overflow-hidden bg-black">
       <video 
+        key={videoUrl ?? '/preloader.mp4'}
         ref={videoRef}
         autoPlay 
         loop 
@@ -68,7 +74,7 @@ export default function Hero() {
         // Changed to absolute so it stays inside the Hero section and doesn't break other sections
         className="absolute inset-0 w-full h-full object-cover"
       >
-        <source src="/preloader.mp4" type="video/mp4" />
+        <source src={videoUrl ?? '/preloader.mp4'} type="video/mp4" />
       </video>
       
       {/* Removed overflow-hidden from here to fix the Safari/WebKit clipping bug */}
@@ -76,6 +82,13 @@ export default function Hero() {
         <h2 
           ref={textRef}
           className="text-[18vw] sm:text-[80px] md:text-[120px] font-hero text-black m-0 p-0 origin-center whitespace-nowrap"
+          style={{
+            fontFamily: fontFamilyCss(font),
+            fontWeight: font.weight,
+            fontStyle: font.style,
+            letterSpacing: font.letterSpacing,
+            textTransform: font.textTransform ?? 'uppercase',
+          }}
         >
           ASHTAAR
         </h2>

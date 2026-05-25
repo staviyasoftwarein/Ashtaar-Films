@@ -119,7 +119,7 @@ export default function Navbar() {
           >
             {/* Ambient Background */}
             <div className="absolute inset-0 pointer-events-none opacity-20">
-               <div className="absolute inset-0 bg-[url('/bts3.jpeg')] bg-cover bg-center mix-blend-screen grayscale"></div>
+               <div className="absolute inset-0 bg-[url('/bts3.webp')] bg-cover bg-center mix-blend-screen grayscale"></div>
                <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-[#050505]"></div>
                <div className="absolute top-1/4 right-1/4 w-[40vw] h-[40vh] bg-[#D4AF37]/10 blur-[120px] rounded-full"></div>
             </div>

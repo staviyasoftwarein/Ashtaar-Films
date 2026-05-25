@@ -57,9 +57,27 @@ export function useSetting<T>(key: string, fallback: T): {
       if (!cancelled) setValue(v as T);
     });
 
+    const channel = supabase
+      .channel(`site_settings:${key}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings',
+          filter: `key=eq.${key}`,
+        },
+        (payload) => {
+          const row = payload.new as { value?: unknown } | null;
+          if (!cancelled && row && 'value' in row) emit(key, row.value);
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
       unsub();
+      supabase.removeChannel(channel);
     };
   }, [key]);
 

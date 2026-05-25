@@ -1,5 +1,7 @@
 /* Types + defaults + YouTube helpers for the Portfolio section. */
 
+import { publicUrl } from './supabase';
+
 export type Slide1 = {
   num: string;
   title: string;
@@ -132,4 +134,11 @@ export function ytThumb(id: string, quality: 'mq' | 'hq' | 'max' = 'mq'): string
   if (!id) return '';
   const map = { mq: 'mqdefault', hq: 'hqdefault', max: 'maxresdefault' } as const;
   return `https://img.youtube.com/vi/${id}/${map[quality]}.jpg`;
+}
+
+export function resolvePortfolioMediaUrl(path: string): string {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/')) return path;
+  return publicUrl('media', path);
 }

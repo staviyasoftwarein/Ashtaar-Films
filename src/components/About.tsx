@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { motion } from 'motion/react';
+import { useSetting } from '../hooks/useSetting';
+import { DEFAULT_STORY } from '../lib/story';
 
 export default function About() {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const text = "the story of ASHTAAR begins with vision. we believe creators who've proven their artistry deserve better: better production, better storytelling, better cinema. this is the status quo we're building. make it to the screen, and experience the ascension yourself.";
+  const { value: story } = useSetting('story', DEFAULT_STORY);
 
   return (
     <div id="about" ref={containerRef} className="h-screen bg-transparent text-white flex items-center justify-center px-6 md:px-24 relative z-20 overflow-hidden">
@@ -56,10 +57,10 @@ export default function About() {
       <div className="max-w-5xl mx-auto w-full relative z-10 py-12 md:py-32">
         <h3 className="text-[#D4AF37] uppercase tracking-[0.2em] text-xs md:text-sm mb-8 md:mb-12 font-sans font-bold flex items-center gap-4">
           <span className="w-8 h-[1px] bg-[#D4AF37]"></span>
-          THE GENESIS OF GREAT CINEMA.
+          {story.eyebrow}
         </h3>
-        <p className="font-serif text-3xl md:text-5xl lg:text-[3.5rem] leading-[1.3] tracking-tight">
-          {text}
+        <p className="font-serif text-3xl md:text-5xl lg:text-[3.5rem] leading-[1.3] tracking-tight whitespace-pre-line">
+          {story.body}
         </p>
       </div>
     </div>

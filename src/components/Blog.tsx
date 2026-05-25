@@ -1,72 +1,35 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { ArrowUpRight, Clock, MessageSquare, ChevronRight, X } from 'lucide-react';
+import { useSetting } from '../hooks/useSetting';
+import { DEFAULT_BLOG, formatBlogDate, resolveBlogMediaUrl, type BlogPost } from '../lib/blog';
 
-const posts = [
-  {
-    title: "The Vision Behind Ashtaar Films: Redefining Regional Cinema",
-    category: "Vision",
-    date: "May 10, 2026",
-    comments: 42,
-    img: "https://images.unsplash.com/photo-1492691523567-6170c81efc30?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "Exploring our founding philosophy and how Ashtaar Films aims to bring authentic regional stories to the global stage..."
-  },
-  {
-    title: "On Set with Ashtaar: The Making of Our Latest Masterpiece",
-    category: "Production",
-    date: "April 22, 2026",
-    comments: 18,
-    img: "https://images.unsplash.com/photo-1542204172-3c13955bca3e?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "A deep dive into the rigorous production process and collaborative spirit that define an Ashtaar Films set..."
-  },
-  {
-    title: "Empowering Local Voices: Ashtaar's Emerging Directors Program",
-    category: "Community",
-    date: "March 15, 2026",
-    comments: 34,
-    img: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "How we are discovering, funding, and supporting the next generation of visionary storytellers from the region..."
-  }
+const fallbackImages = [
+  'https://images.unsplash.com/photo-1492691523567-6170c81efc30?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1542204172-3c13955bca3e?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1455390582262-044cdead27d8?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1920&q=80',
 ];
 
-const allPosts = [
-  ...posts.map(p => ({
-    ...p,
-    content: "The world of cinema is constantly evolving, yet the core principles of storytelling remain eternal. In this piece, we explore the intricate balance between technical mastery and emotional resonance. Our approach at Ashtaar Films is rooted in a deep understanding of human experience, translated through the meticulous craft of filmmaking. Every frame is a deliberate choice, every sound carefully orchestrated to immerse the audience in a reality that is both constructed and profoundly authentic. We believe that true cinematic art doesn't just show a story; it makes you feel it in your bones."
-  })),
-  {
-    title: "The Sound of Silence: Sound Design in Our Thrillers",
-    category: "Technical",
-    date: "February 28, 2026",
-    comments: 21,
-    img: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "Exploring the psychological impact of audio and silence in modern thriller filmmaking...",
-    content: "Sound design is often the unsung hero of a compelling thriller. It's not just about loud noises or jump scares; it's about the tension created by what you don't hear. The deliberate absence of sound—the silence—can be more terrifying than the most dramatic orchestral swell. In our recent productions, we've focused on utilizing silence as a narrative tool, forcing the audience to lean into the quiet moments, heightening their senses and making the eventual auditory impact that much more visceral."
-  },
-  {
-    title: "From Page to Screen: Our Script Development Process",
-    category: "Writing",
-    date: "January 14, 2026",
-    comments: 15,
-    img: "https://images.unsplash.com/photo-1455390582262-044cdead27d8?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "The journey of a story from the first draft to the final shooting script...",
-    content: "A script is a living document, a blueprint for a world that does not yet exist. Our script development process is rigorous, collaborative, and entirely driven by character. We don't just write dialogue; we sculpt subtext. From the initial outlining phase to the countless revisions and table reads, every word is tested for authenticity and dramatic weight. We believe that the foundation of any great film is a script that is so solid, it allows the director and actors the freedom to truly soar."
-  },
-  {
-    title: "Lighting the Shadows: A Cinematography Deep Dive",
-    category: "Masterclass",
-    date: "December 05, 2025",
-    comments: 56,
-    img: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1920&q=80",
-    excerpt: "Breaking down the intricate lighting setups from our most visually striking scenes...",
-    content: "Cinematography is painting with light, but it's equally about mastering the shadows. The absence of light defines depth, mood, and mystery. In this deep dive, we explore how our cinematographers use shadow to conceal and reveal, guiding the viewer's eye and manipulating their emotional response. We examine specific setups from our films, analyzing the placement of every fixture and flag, to demonstrate how a nuanced approach to lighting can elevate a scene from standard coverage to true cinematic art."
-  }
-];
+type RenderPost = BlogPost & { img: string; displayDate: string };
+
+function toRenderPost(post: BlogPost, index: number): RenderPost {
+  return {
+    ...post,
+    img: post.mediaPath ? resolveBlogMediaUrl(post.mediaPath) : fallbackImages[index % fallbackImages.length],
+    displayDate: formatBlogDate(post.date),
+  };
+}
 
 export default function Blog() {
+  const { value: blog } = useSetting('blog', DEFAULT_BLOG);
+  const allPosts = blog.posts.map(toRenderPost);
+  const posts = allPosts.slice(0, 3);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<typeof allPosts[0] | null>(null);
+  const [selectedPost, setSelectedPost] = useState<RenderPost | null>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -131,7 +94,7 @@ export default function Blog() {
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono mb-6 group-hover:text-gray-900 transition-colors">
-                <span className="flex items-center gap-2"><Clock className="w-3 h-3" /> {post.date}</span>
+                <span className="flex items-center gap-2"><Clock className="w-3 h-3" /> {post.displayDate}</span>
                 <span className="flex items-center gap-2"><MessageSquare className="w-3 h-3" /> {post.comments}</span>
               </div>
               <h4 className="font-serif text-3xl lg:text-4xl leading-snug group-hover:text-[#D4AF37] transition-colors duration-300 mb-6 text-gray-900">
@@ -210,7 +173,7 @@ export default function Blog() {
                       </div>
                       <div className="mb-8 flex items-center justify-end">
                          <span className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
-                           <Clock className="w-3.5 h-3.5" /> {selectedPost.date}
+                           <Clock className="w-3.5 h-3.5" /> {selectedPost.displayDate}
                          </span>
                       </div>
                       <h2 className="font-serif text-4xl leading-tight mb-8 text-gray-900">{selectedPost.title}</h2>
@@ -240,7 +203,7 @@ export default function Blog() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-4 text-[10px] text-gray-500 uppercase tracking-wider font-mono mb-3">
-                              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {post.date}</span>
+                              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {post.displayDate}</span>
                             </div>
                             <h4 className="font-serif text-xl md:text-2xl leading-tight group-hover:text-[#D4AF37] transition-colors duration-300 mb-2">
                               {post.title}

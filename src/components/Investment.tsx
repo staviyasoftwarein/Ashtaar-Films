@@ -1,59 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
-
-const tiers = [
-  { 
-    num: "01",
-    title: "ASSOCIATE PRODUCER", 
-    price: "₹10 Lakh+", 
-    subtitle: "Your first step into cinema ownership.",
-    benefits: [
-      "Screen credit as Associate Producer", 
-      "Net profit revenue share", 
-      "Ashtaar Films investor community access",
-      "Production updates and previews"
-    ],
-    btnText: "BUILD TOMORROW, TODAY!",
-    isDark: false
-  },
-  { 
-    num: "02",
-    title: "CO-PRODUCER", 
-    price: "₹50 Lakh+", 
-    subtitle: "The filmmaker's chair. Your name. Your legacy.",
-    benefits: [
-      "Screen credit as Co-Producer", 
-      "Multi-window revenue share (theatrical + OTT + satellite)", 
-      "On-set access during principal photography", 
-      "Brand integration opportunities",
-      "Priority access on future projects"
-    ],
-    btnText: "BUILD TOMORROW, TODAY!",
-    isDark: true,
-    badge: "MOST POPULAR"
-  },
-  { 
-    num: "03",
-    title: "EXECUTIVE PRODUCER", 
-    price: "₹1.5 Crore+", 
-    subtitle: "Own the story. Define the future.",
-    benefits: [
-      "Screen credit as Executive Producer", 
-      "Primary revenue share across all windows", 
-      "IP co-ownership rights", 
-      "First right of refusal on sequels", 
-      "Dedicated relationship manager",
-      "On-set access + brand integration",
-      "Exclusive premiere invitations"
-    ],
-    btnText: "BUILD TOMORROW, TODAY!",
-    isDark: false
-  },
-];
+import { useSetting } from '../hooks/useSetting';
+import { DEFAULT_INVESTMENT } from '../lib/investment';
 
 export default function Investment() {
   const [showTiers, setShowTiers] = useState(false);
+  const { value: investment } = useSetting('investment', DEFAULT_INVESTMENT);
+  const tiers = investment.tiers;
 
   return (
     <section id="investment" className="relative w-full bg-[#fcfbf9] min-h-[100dvh]">
@@ -73,22 +27,22 @@ export default function Investment() {
                className="flex items-center gap-3 mb-6 md:mb-8"
             >
                <span className="w-2 h-2 rounded-full bg-[#D4AF37]"></span>
-               <h2 className="text-[10px] md:text-xs text-black/50 font-sans tracking-[0.4em] uppercase font-bold">Investment</h2>
+               <h2 className="text-[10px] md:text-xs text-black/50 font-sans tracking-[0.4em] uppercase font-bold">{investment.eyebrow}</h2>
             </motion.div>
             
             <motion.h1 
                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}
                className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-medium uppercase tracking-tight leading-[1] mb-8"
             >
-              Don't watch the future,<br />
-              <span className="text-[#D4AF37] italic font-serif normal-case block mt-2">Shape it!</span>
+              {investment.headingLine1}<br />
+              <span className="text-[#D4AF37] italic font-serif normal-case block mt-2">{investment.headingLine2}</span>
             </motion.h1>
 
             <motion.blockquote 
                initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }}
                className="text-gray-500 text-sm md:text-base font-light leading-relaxed max-w-md border-l border-black/10 pl-4 italic"
             >
-              "Three investment tiers. One shared vision. Join us and take an active stake in creating the stories of tomorrow."
+              {investment.blockquote}
             </motion.blockquote>
           </div>
         </div>
@@ -101,14 +55,14 @@ export default function Investment() {
               className="flex flex-col items-center justify-center h-full max-w-md mx-auto text-center space-y-8"
             >
               <h3 className="text-3xl md:text-5xl font-serif text-black tracking-tight">
-                Your legacy begins behind the camera.
+                {investment.ctaHeading}
               </h3>
               <button 
                 onClick={() => setShowTiers(true)}
                 className="group relative px-8 py-5 bg-[#D4AF37] text-white tracking-widest uppercase font-bold text-xs rounded-full overflow-hidden transition-all hover:scale-105"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Ready to build tomorrow, today?
+                  {investment.ctaButton}
                   <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform rotate-180" />
                 </span>
                 <div className="absolute inset-0 bg-black translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500 ease-in-out"></div>
@@ -158,10 +112,10 @@ export default function Investment() {
                   </ul>
                   
                   <a 
-                    href={`mailto:staviyasoftware.in@gmail.com?subject=Investment Inquiry&body=hey i want to inquire about ${encodeURIComponent(tier.title)}`}
+                    href={`mailto:${investment.contactEmail}?subject=Investment Inquiry&body=hey i want to inquire about ${encodeURIComponent(tier.title)}`}
                     className={`flex justify-center items-center gap-2 w-full py-4 rounded-lg uppercase tracking-widest text-xs font-bold transition-all duration-300 text-center ${tier.isDark ? 'bg-[#D4AF37] text-black hover:bg-white' : 'bg-transparent border border-black/20 text-black hover:bg-black hover:text-white'}`}
                   >
-                    BUILD TOMORROW, TODAY!
+                    {tier.btnText}
                   </a>
                 </div>
               ))}
@@ -172,4 +126,3 @@ export default function Investment() {
     </section>
   );
 }
-

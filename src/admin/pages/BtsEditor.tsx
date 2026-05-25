@@ -2,12 +2,76 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, X, Plus, Trash2 } from 'lucide-react';
 import { useSetting } from '../../hooks/useSetting';
-import { uploadToMediaBucket, fileExtension, tryDeleteFromMediaBucket } from '../../lib/storageUpload';
+import { uploadToMediaBucket, tryDeleteFromMediaBucket } from '../../lib/storageUpload';
 import { BTS_MAX_IMAGES, DEFAULT_BTS, nextBtsId, resolveBtsImageUrl, type BtsConfig, type BtsImage } from '../../lib/bts';
 import { Button, Card, Field, Input, Toast } from '../components/ui';
 
 function deepEqual<T>(a: T, b: T) {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+async function getExifOrientation(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const view = new DataView(e.target?.result as ArrayBuffer);
+      if (view.getUint16(0, false) !== 0xFFD8) return resolve(1);
+      const length = view.byteLength;
+      let offset = 2;
+      while (offset < length) {
+        const marker = view.getUint16(offset, false);
+        offset += 2;
+        if (marker === 0xFFE1) {
+          if (view.getUint32((offset += 2), false) !== 0x45786966) return resolve(1);
+          const little = view.getUint16((offset += 6), false) === 0x4949;
+          offset += view.getUint32(offset + 4, little);
+          const tags = view.getUint16(offset, little);
+          offset += 2;
+          for (let i = 0; i < tags; i++) {
+            if (view.getUint16(offset + i * 12, little) === 0x0112) {
+              return resolve(view.getUint16(offset + i * 12 + 8, little));
+            }
+          }
+        } else if ((marker & 0xFF00) !== 0xFF00) break;
+        else offset += view.getUint16(offset, false);
+      }
+      resolve(1);
+    };
+    reader.readAsArrayBuffer(file.slice(0, 64 * 1024));
+  });
+}
+
+async function normalizeOrientation(file: File): Promise<Blob> {
+  const orientation = await getExifOrientation(file);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const needsSwap = [5, 6, 7, 8].includes(orientation);
+      canvas.width  = needsSwap ? img.height : img.width;
+      canvas.height = needsSwap ? img.width  : img.height;
+      switch (orientation) {
+        case 2: ctx.transform(-1,  0,  0,  1, canvas.width, 0); break;
+        case 3: ctx.transform(-1,  0,  0, -1, canvas.width, canvas.height); break;
+        case 4: ctx.transform( 1,  0,  0, -1, 0, canvas.height); break;
+        case 5: ctx.transform( 0,  1,  1,  0, 0, 0); break;
+        case 6: ctx.transform( 0,  1, -1,  0, canvas.height, 0); break;
+        case 7: ctx.transform( 0, -1, -1,  0, canvas.height, canvas.width); break;
+        case 8: ctx.transform( 0, -1,  1,  0, 0, canvas.width); break;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob failed')),
+        'image/webp',
+        0.88
+      );
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 export default function BtsEditor() {
@@ -78,7 +142,7 @@ export default function BtsEditor() {
         </div>
       </Card>
 
-      <Card title={`Images (${draft.images.length} / ${BTS_MAX_IMAGES})`} hint="Each tile flies into view as the user scrolls. Files are stored in the bucket as bts/bts{n}.{ext} — replacing with a different format auto-removes the previous file. Add up to 15; the gallery adapts to the count.">
+      <Card title={`Images (${draft.images.length} / ${BTS_MAX_IMAGES})`} hint="Each image is EXIF-corrected and saved as .webp on upload. Re-upload any rotated images to fix them.">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {draft.images.map((img, i) => (
             <BtsTile
@@ -95,7 +159,8 @@ export default function BtsEditor() {
             <button
               type="button"
               onClick={addImage}
-              className="aspect-[16/9] rounded-md border border-dashed border-[var(--color-line-strong)] flex flex-col items-center justify-center gap-2 text-[#A3A3A3] hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors self-start"
+              // ✅ Taller add-slot button to match portrait tile height
+              className="aspect-[3/4] rounded-md border border-dashed border-[var(--color-line-strong)] flex flex-col items-center justify-center gap-2 text-[#A3A3A3] hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors self-start"
             >
               <Plus size={20} strokeWidth={1.5} />
               <span className="text-[10px] font-mono uppercase tracking-[0.2em]">add image</span>
@@ -129,13 +194,8 @@ export default function BtsEditor() {
   );
 }
 
-/* ─── Single BTS image tile uploader ───────────────────── */
 function BtsTile({
-  index,
-  imageId,
-  imagePath,
-  onChange,
-  onRemoveSlot,
+  index, imageId, imagePath, onChange, onRemoveSlot,
 }: {
   index: number;
   imageId: string;
@@ -146,7 +206,7 @@ function BtsTile({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [bust, setBust] = useState(0);
+  const [bust, setBust] = useState(Date.now);
   const [error, setError] = useState<string | null>(null);
 
   const url = imagePath
@@ -155,23 +215,22 @@ function BtsTile({
 
   const onPick = async (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file.');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; }
     setBusy(true);
     setProgress(0);
     setError(null);
     try {
-      const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? 'jpg');
-      const path = `bts/bts${imageId}.${ext}`;
-      if (imagePath && imagePath !== path) {
-        await tryDeleteFromMediaBucket(imagePath);
-      }
+      // ✅ Always .webp — EXIF rotation corrected at pixel level before upload
+      const path = `bts/bts${imageId}.webp`;
+      if (imagePath && imagePath !== path) await tryDeleteFromMediaBucket(imagePath);
+
+      const normalizedBlob = await normalizeOrientation(file);
+      const normalizedFile = new File([normalizedBlob], `bts${imageId}.webp`, { type: 'image/webp' });
+
       await uploadToMediaBucket({
-        file,
+        file: normalizedFile,
         path,
-        contentType: file.type || `image/${ext}`,
+        contentType: 'image/webp',
         onProgress: setProgress,
       });
       onChange(path);
@@ -189,10 +248,12 @@ function BtsTile({
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        className="relative w-full aspect-[16/9] rounded-md overflow-hidden border border-[var(--color-line)] bg-[var(--color-surface-2)] group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]"
+        // ✅ aspect-[3/4] instead of aspect-[16/9] — portrait images now show correctly
+        // ✅ object-contain instead of object-cover — no cropping, full image visible
+        className="relative w-full aspect-[3/4] rounded-md overflow-hidden border border-[var(--color-line)] bg-[var(--color-surface-2)] group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]"
       >
         {url ? (
-          <img src={url} alt="" className="w-full h-full object-cover" />
+          <img src={url} alt="" className="w-full h-full object-contain" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#525252]">
             <Upload size={18} strokeWidth={1.5} />
@@ -223,29 +284,24 @@ function BtsTile({
       />
 
       <p className="text-[10px] font-mono text-[#525252] truncate">
-        {imagePath || `bts/bts${imageId}.{ext}`}
+        {imagePath || `bts/bts${imageId}.webp`}
       </p>
 
       <div className="flex items-center justify-between gap-2">
         {imagePath && !busy ? (
           <button
             type="button"
-            onClick={async () => {
-              await tryDeleteFromMediaBucket(imagePath);
-              onChange('');
-            }}
+            onClick={async () => { await tryDeleteFromMediaBucket(imagePath); onChange(''); }}
             className="text-[11px] font-sans text-[#A3A3A3] hover:text-red-400 transition-colors inline-flex items-center gap-1"
           >
             <X size={12} /> Clear image
           </button>
         ) : <span />}
-
         <button
           type="button"
           disabled={busy}
           onClick={onRemoveSlot}
           className="text-[11px] font-sans text-[#A3A3A3] hover:text-red-400 transition-colors inline-flex items-center gap-1 disabled:opacity-40"
-          title="Delete this slot"
         >
           <Trash2 size={12} /> Delete slot
         </button>

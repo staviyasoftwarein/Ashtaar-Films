@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { useSetting } from '../hooks/useSetting';
+import { DEFAULT_CAREERS, resolveCareerImageUrl } from '../lib/careers';
 
 const ApplicantTypeSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,7 +117,7 @@ const ApplicantTypeSelector = () => {
   );
 };
 
-const rolesData = [
+const fallbackRolesData = [
   { title: "Director", dept: "Direction", quote: "Vision is the art of seeing what is invisible to others.", img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1920&q=80" },
   { title: "Assistant Director", dept: "Direction", quote: "Chaos management disguised as scheduling.", img: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?auto=format&fit=crop&w=1920&q=80" },
   { title: "Producer", dept: "Production", quote: "Making the impossible happen, on schedule and under budget.", img: "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=1920&q=80" },
@@ -135,6 +137,11 @@ const rolesData = [
 ];
 
 export default function Careers() {
+  const { value: careers } = useSetting('careers', DEFAULT_CAREERS);
+  const rolesData = careers.roles
+    .filter((role) => role.active)
+    .map((role) => ({ ...role, img: resolveCareerImageUrl(role.imagePath) }));
+  const roles = rolesData.length ? rolesData : fallbackRolesData;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showRoles, setShowRoles] = useState(false);
@@ -152,7 +159,7 @@ export default function Careers() {
     return () => { document.body.style.overflow = 'auto'; }
   }, [selectedIndex]);
 
-  const selectedData = selectedIndex !== null ? rolesData[selectedIndex] : null;
+  const selectedData = selectedIndex !== null ? roles[selectedIndex] : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +195,7 @@ export default function Careers() {
               animate={{ opacity: 0.8, scale: 1.15 }}
               exit={{ opacity: 0 }}
               transition={{ opacity: { duration: 0.6 }, scale: { duration: 25, ease: "linear" } }}
-              src={rolesData[hoveredIndex].img}
+              src={roles[hoveredIndex].img}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
@@ -201,7 +208,7 @@ export default function Careers() {
               className="absolute inset-0 w-full h-full"
             >
                <img 
-                 src="/bts7.jpeg" 
+                 src="/bts7.webp" 
                  loading="lazy"
                  decoding="async"
                  className="w-full h-full object-cover opacity-20 grayscale blur-[1px]" 
@@ -224,22 +231,22 @@ export default function Careers() {
                className="flex items-center gap-3 mb-6 md:mb-8"
             >
                <span className="w-2 h-2 rounded-full bg-[#b20710] animate-pulse shadow-[0_0_10px_#b20710]"></span>
-               <h2 className="text-[10px] md:text-xs text-white/50 font-mono tracking-[0.4em] uppercase font-bold drop-shadow-md">Join The Cult</h2>
+               <h2 className="text-[10px] md:text-xs text-white/50 font-mono tracking-[0.4em] uppercase font-bold drop-shadow-md">{careers.eyebrow}</h2>
             </motion.div>
             
             <motion.h1 
                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}
                className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black text-white uppercase tracking-tighter leading-[0.9] mb-8 drop-shadow-2xl"
             >
-              We don't hire<br />employees.<br />
-              <span className="text-[#D4AF37]">We recruit<br />fanatics.</span>
+              {careers.titleLine1}<br />
+              <span className="text-[#D4AF37]">{careers.titleLine2}</span>
             </motion.h1>
 
             <motion.blockquote 
                initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }}
                className="text-white/40 text-sm md:text-base font-light leading-relaxed max-w-md border-l border-white/10 pl-4 italic"
             >
-              "If you're looking for a comfortable 9-to-5, close this tab. We are looking for the obsessed, the detail-oriented, and the relentlessly creative. Leave your ego at the door. Let your work speak. This is not a workplace. It is a forge."
+              "{careers.description}"
             </motion.blockquote>
           </div>
         </div>
@@ -274,7 +281,7 @@ export default function Careers() {
               className="flex flex-col w-full max-w-2xl mx-auto space-y-1 relative"
             >
                <div className="mb-8 lg:mb-16 flex justify-between items-center">
-                  <span className="font-mono text-[10px] md:text-xs tracking-[0.2em] text-white/30 uppercase">Open Positions [{rolesData.length}]</span>
+                  <span className="font-mono text-[10px] md:text-xs tracking-[0.2em] text-white/30 uppercase">Open Positions [{roles.length}]</span>
                   <button 
                     onClick={() => setShowRoles(false)}
                     className="font-mono text-[10px] tracking-[0.2em] text-white/50 hover:text-[#D4AF37] uppercase transition-colors flex items-center gap-2"
@@ -283,7 +290,7 @@ export default function Careers() {
                   </button>
                </div>
 
-              {rolesData.map((role, i) => (
+              {roles.map((role, i) => (
                 <button
                   key={i}
                   onMouseEnter={() => setHoveredIndex(i)}
