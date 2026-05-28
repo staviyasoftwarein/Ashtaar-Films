@@ -171,7 +171,7 @@ function MemberPhotoUploader({
     setError(null);
     try {
       const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? 'jpg');
-      const path = `team/imp_person${memberId}.${ext}`;
+      const path = `team/imp_person${memberId}-${Date.now()}.${ext}`;
       if (imagePath && imagePath !== path) {
         await tryDeleteFromMediaBucket(imagePath);
       }

@@ -217,7 +217,7 @@ function AvatarUploader({
     setError(null);
     try {
       const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? 'jpg');
-      const path = `testimonials/avatar_${testimonialId}.${ext}`;
+      const path = `testimonials/avatar_${testimonialId}-${Date.now()}.${ext}`;
       // Different path? remove the previous bucket file.
       if (avatarPath && avatarPath !== path) {
         await tryDeleteFromMediaBucket(avatarPath);
@@ -327,7 +327,7 @@ function MainMediaUploader({
     setError(null);
     try {
       const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? (isVideo ? 'mp4' : 'jpg'));
-      const path = `testimonials/Testimonial_${testimonialId}.${ext}`;
+      const path = `testimonials/Testimonial_${testimonialId}-${Date.now()}.${ext}`;
       if (mediaPath && mediaPath !== path) {
         await tryDeleteFromMediaBucket(mediaPath);
       }

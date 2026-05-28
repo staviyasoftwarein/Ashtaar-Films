@@ -154,11 +154,11 @@ export default function InvestmentEditor() {
               placeholder="Investment"
             />
           </Field>
-          <Field label="Contact email" hint="Used for the 'BUILD TOMORROW' mailto links.">
+          <Field label="WhatsApp number" hint="Used for the 'BUILD TOMORROW' WhatsApp inquiry links. Include country code.">
             <Input
-              value={draft.contactEmail}
-              onChange={(e) => setDraft({ ...draft, contactEmail: e.target.value })}
-              placeholder="staviyasoftware.in@gmail.com"
+              value={draft.whatsappNumber || DEFAULT_INVESTMENT.whatsappNumber}
+              onChange={(e) => setDraft({ ...draft, whatsappNumber: e.target.value })}
+              placeholder="+91 70963 60360"
             />
           </Field>
           <Field label="Heading – line 1" hint="Plain uppercase line.">

@@ -18,6 +18,7 @@ export type InvestmentConfig = {
   ctaHeading: string;
   ctaButton: string;
   contactEmail: string;
+  whatsappNumber: string;
   tiers: InvestmentTier[];
 };
 
@@ -30,6 +31,7 @@ export const DEFAULT_INVESTMENT: InvestmentConfig = {
   ctaHeading: 'Your legacy begins behind the camera.',
   ctaButton: 'Ready to build tomorrow, today?',
   contactEmail: 'staviyasoftware.in@gmail.com',
+  whatsappNumber: '+91 70963 60360',
   tiers: [
     {
       id: '1',

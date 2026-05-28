@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { useSetting } from '../hooks/useSetting';
 import { DEFAULT_CAREERS, resolveCareerImageUrl } from '../lib/careers';
 
-const ApplicantTypeSelector = () => {
+const ApplicantTypeSelector = ({ onChange }: { onChange?: (val: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
@@ -95,6 +95,7 @@ const ApplicantTypeSelector = () => {
                 onClick={() => {
                   setSelectedIndex(i);
                   setIsOpen(false);
+                  onChange?.(opt.title);
                 }}
               >
                 <div className="option-row">
@@ -138,14 +139,21 @@ const fallbackRolesData = [
 
 export default function Careers() {
   const { value: careers } = useSetting('careers', DEFAULT_CAREERS);
-  const rolesData = careers.roles
-    .filter((role) => role.active)
-    .map((role) => ({ ...role, img: resolveCareerImageUrl(role.imagePath) }));
+  const rolesData = useMemo(
+    () =>
+      careers.roles
+        .filter((role) => role.active)
+        .map((role) => ({ ...role, img: resolveCareerImageUrl(role.imagePath) })),
+    [careers.roles]
+  );
   const roles = rolesData.length ? rolesData : fallbackRolesData;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showRoles, setShowRoles] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', url: '', letter: '' });
+
+  // ✅ CHANGE 1: Added 'genre' to formData
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', url: '', letter: '', genre: '', applicantType: '' });
+const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmittng, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<null | 'success' | 'error'>(null);
 
@@ -161,25 +169,62 @@ export default function Careers() {
 
   const selectedData = selectedIndex !== null ? roles[selectedIndex] : null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ✅ Helper: is this role a Director or Writer?
+  const isDirectorOrWriter = ['director', 'writer', 'script writer'].includes((selectedData?.title ?? '').toLowerCase());
+
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTMXliVWQIub1HSyrlLIAfnjTPXpukkQYplo74_2sPbQZkTp_Npz_xkL3n6aDbzITZag/exec";
+  const toBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone) {
       setSubmitStatus('error');
       return;
     }
-    // Validate basic email format
     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       setSubmitStatus('error');
       return;
     }
+    // ✅ Block files over 4MB — Apps Script payload limit is ~6MB, base64 adds 33%
+    if (resumeFile && resumeFile.size > 4 * 1024 * 1024) {
+      alert("Resume file is too large. Please upload a file under 4MB.");
+      return;
+    }
     setIsSubmitting(true);
-    
-    // Simulate network request
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role:          selectedData?.title    || '',
+          applicantType: formData.applicantType || '',
+          name:          formData.name,
+          email:         formData.email,
+          phone:         formData.phone,
+          url:           formData.url,
+          resumeBase64:  resumeFile ? await toBase64(resumeFile) : '',
+          resumeName:    resumeFile?.name || '',
+          resumeType:    resumeFile?.type || '',
+          genre:         formData.genre,
+          letter:        formData.letter,
+        }),
+      });
       setSubmitStatus('success');
-      setFormData({ name: '', email: '', phone: '', url: '', letter: '' });
-    }, 1000);
+      setFormData({ name: '', email: '', phone: '', url: '', letter: '', genre: '', applicantType: '' });
+setResumeFile(null);
+    } catch (err) {
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -374,14 +419,6 @@ export default function Careers() {
                         </p>
                         
                         <form onSubmit={handleSubmit} className="space-y-8 md:space-y-12">
-                          {/* CSRF Token (Mock) */}
-                          <input type="hidden" name="csrf_token" value="mock-csrf-token-abc123" />
-
-                          {submitStatus === 'success' && (
-                            <div className="bg-green-500/20 border border-green-500/50 text-green-300 px-4 py-3 rounded text-sm mb-6 font-mono">
-                              Application successfully encrypted and submitted.
-                            </div>
-                          )}
                           {submitStatus === 'error' && (
                             <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded text-sm mb-6 font-mono">
                               Please review the fields. Ensure a valid email and required information are provided.
@@ -389,13 +426,34 @@ export default function Careers() {
                           )}
 
                           {/* Applicant Profile Selector */}
-                          <ApplicantTypeSelector />
+                          <ApplicantTypeSelector onChange={(val) => setFormData(f => ({ ...f, applicantType: val }))} />
+
+                          {/* Genre field — only shown for Director or Writer */}
+                          {isDirectorOrWriter && (
+                            <div className="relative group">
+                              <label className="block text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2 font-mono pb-1">
+                                What Genre Do You {selectedData.title.toLowerCase() === 'director' ? 'Direct' : 'Write'} In?
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.genre}
+                                onChange={(e) => setFormData({ ...formData, genre: e.target.value.replace(/</g, '') })}
+                                className="w-full bg-transparent border-b border-white/20 py-2 md:py-3 text-white text-base md:text-lg focus:outline-none focus:border-white transition-colors"
+                                placeholder={
+                                  selectedData.title.toLowerCase() === 'director'
+                                    ? 'e.g. Psychological Thriller, Sci-Fi, Drama'
+                                    : 'e.g. Crime Drama, Dark Comedy, Romance'
+                                }
+                              />
+                            </div>
+                          )}
 
                           {/* Inputs */}
                           <div className="relative group">
                             <label className="block text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2 font-mono pb-1">Full Legal Name *</label>
                             <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value.replace(/</g, "")})} className="w-full bg-transparent border-b border-white/20 py-2 md:py-3 text-white text-base md:text-lg focus:outline-none focus:border-white transition-colors" placeholder="Christopher Nolan" />
                           </div>
+
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                             <div className="relative group">
@@ -412,6 +470,51 @@ export default function Careers() {
                             <label className="block text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2 font-mono pb-1">Primary Portfolio / Reel URL</label>
                             <input type="url" value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value.replace(/</g, "")})} className="w-full bg-transparent border-b border-white/20 py-2 md:py-3 text-white text-base md:text-lg focus:outline-none focus:border-white transition-colors" placeholder="https://vimeo.com/your-reel" />
                           </div>
+                          <div className="relative group">
+                        <label className="block text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2 font-mono pb-1">
+                          Resume / Profile Attachment
+                        </label>
+                        <label
+  onDragOver={(e) => e.preventDefault()}
+  onDrop={(e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) setResumeFile(file);
+  }}
+  className="w-full border border-dashed border-white/20 rounded-sm py-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-white/40 transition-colors"
+>
+  {resumeFile ? (
+    <>
+      <svg className="w-6 h-6 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      <span className="text-white text-sm font-light">{resumeFile.name}</span>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}
+        className="text-white/30 hover:text-white/60 text-[10px] font-mono uppercase tracking-widest transition-colors"
+      >
+        Remove
+      </button>
+    </>
+  ) : (
+    <>
+      <svg className="w-6 h-6 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      <span className="text-white/40 text-sm font-light">Attach PDF or image resume</span>
+      <span className="text-white/20 text-[10px] font-mono tracking-widest">PDF · JPG · PNG · WEBP</span>
+    </>
+  )}
+  {/* ✅ Input is now INSIDE the label — no programmatic click needed */}
+  <input
+  type="file"
+  accept=".pdf,.jpg,.jpeg,.png,.webp"
+  style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}
+  onChange={(e) => {
+    const file = e.target.files?.[0];
+    if (file) setResumeFile(file);
+  }}
+/>
+</label>
+                      </div>
+                          
                           
                           <div className="relative group">
                             <label className="block text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2 font-mono pb-1">Brief Cover Letter / Vibe Check</label>
@@ -428,6 +531,44 @@ export default function Careers() {
                         </form>
                       </div>
             </div>
+
+            <AnimatePresence>
+              {submitStatus === 'success' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[130] flex items-center justify-center bg-black/70 backdrop-blur-md p-6"
+                  onClick={() => setSubmitStatus(null)}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 16, scale: 0.96 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full max-w-md border border-green-500/40 bg-[#03180a] shadow-[0_24px_80px_rgba(0,0,0,0.55)] p-8 md:p-10 text-center"
+                  >
+                    <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border border-green-400/40 bg-green-400/10 text-green-300">
+                      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h4 className="text-2xl md:text-3xl font-bold text-white mb-3">Application Submitted</h4>
+                    <p className="text-sm md:text-base text-green-200/80 font-light leading-relaxed mb-8">
+                      Your application has been received. Our talent acquisition team will review it soon.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSubmitStatus(null)}
+                      className="w-full bg-white text-black px-6 py-4 uppercase tracking-widest text-[10px] font-bold hover:bg-gray-200 transition-colors"
+                    >
+                      Continue
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

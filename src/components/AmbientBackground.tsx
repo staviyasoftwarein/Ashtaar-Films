@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function AmbientBackground() {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
@@ -7,18 +7,36 @@ export default function AmbientBackground() {
   useEffect(() => {
     setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     
+    let rafId = 0;
     const handleResize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+      });
     };
     
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 15 }, () => ({
+        opacity: Math.random() * 0.3 + 0.1,
+        scale: Math.random() * 0.5 + 0.5,
+        driftY: Math.random() * -200 - 100,
+        driftX: (Math.random() - 0.5) * 100,
+        duration: Math.random() * 10 + 15,
+        delay: Math.random() * 10,
+      })),
+    []
+  );
 
   // Avoid rendering until we have the window size to prevent hydration mismatch or weird initial states
   if (windowSize.width === 0) return null;
-
-  const particles = Array.from({ length: 15 });
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -43,25 +61,25 @@ export default function AmbientBackground() {
       />
 
       {/* Floating ambient particles */}
-      {particles.map((_, i) => (
+      {particles.map((particle, i) => (
         <motion.div
           key={i}
           initial={{
-            x: Math.random() * windowSize.width,
-            y: Math.random() * windowSize.height,
-            opacity: Math.random() * 0.3 + 0.1,
-            scale: Math.random() * 0.5 + 0.5,
+            x: ((i + 1) / (particles.length + 1)) * windowSize.width,
+            y: ((i * 7) % particles.length / particles.length) * windowSize.height,
+            opacity: particle.opacity,
+            scale: particle.scale,
           }}
           animate={{
-            y: [null, Math.random() * -200 - 100],
-            x: [null, (Math.random() - 0.5) * 100],
+            y: [null, particle.driftY],
+            x: [null, particle.driftX],
             opacity: [null, 0],
           }}
           transition={{
-            duration: Math.random() * 10 + 15,
+            duration: particle.duration,
             repeat: Infinity,
             ease: "linear",
-            delay: Math.random() * 10,
+            delay: particle.delay,
           }}
           className="absolute w-1 h-1 bg-[#D4AF37] rounded-full blur-[1px]"
         />

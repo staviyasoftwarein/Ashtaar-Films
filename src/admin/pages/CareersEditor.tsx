@@ -265,7 +265,7 @@ function CareerImageUploader({
     setError(null);
     try {
       const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? 'jpg');
-      const path = `careers/career${roleId}.${ext}`;
+      const path = `careers/career${roleId}-${Date.now()}.${ext}`;
       if (imagePath && imagePath !== path) {
         await tryDeleteFromMediaBucket(imagePath);
       }

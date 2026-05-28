@@ -1,12 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
 import { useAsset } from '../hooks/useAsset';
 import { useSetting } from '../hooks/useSetting';
 import { DEFAULT_HERO_FONT, fontFamilyCss } from '../lib/fonts';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,35 +26,48 @@ export default function Hero() {
       }
     }
     
-    const ctx = gsap.context(() => {
-      // Use fromTo to strictly enforce the scale values and prevent state corruption
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          scrub: 1,
-          pin: true,
-          start: "top top",
-          end: "+=1500" // Slightly longer scroll for smoother zoom
-        }
-      });
-      
-      tl.to(textRef.current, {
-        scale: 300,
-        force3D: false, // CRITICAL: Prevents the browser from crashing due to massive GPU texture limits
-        ease: "none",
-      }, 0);
+    let ctx: { revert: () => void } | null = null;
+    let cancelled = false;
 
-      const scrollIndicator = containerRef.current?.querySelector('.scroll-indicator');
-      if (scrollIndicator) {
-        tl.to(scrollIndicator, {
-          opacity: 0,
+    Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([gsapModule, scrollTriggerModule]) => {
+      if (cancelled) return;
+      const gsap = gsapModule.default;
+      const ScrollTrigger = scrollTriggerModule.default;
+      gsap.registerPlugin(ScrollTrigger);
+
+      ctx = gsap.context(() => {
+        // Use fromTo to strictly enforce the scale values and prevent state corruption
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: containerRef.current,
+            scrub: 1,
+            pin: true,
+            start: "top top",
+            end: "+=1500" // Slightly longer scroll for smoother zoom
+          }
+        });
+
+        tl.to(textRef.current, {
+          scale: 300,
+          force3D: false, // CRITICAL: Prevents the browser from crashing due to massive GPU texture limits
           ease: "none",
-          duration: 0.1 // Fade out quickly at the start of scroll
         }, 0);
-      }
-    }, containerRef);
 
-    return () => ctx.revert();
+        const scrollIndicator = containerRef.current?.querySelector('.scroll-indicator');
+        if (scrollIndicator) {
+          tl.to(scrollIndicator, {
+            opacity: 0,
+            ease: "none",
+            duration: 0.1 // Fade out quickly at the start of scroll
+          }, 0);
+        }
+      }, containerRef);
+    });
+
+    return () => {
+      cancelled = true;
+      ctx?.revert();
+    };
   }, []);
 
   return (

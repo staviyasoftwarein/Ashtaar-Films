@@ -99,6 +99,8 @@ export default function Testimonials() {
                   <img 
                     src={currentSrc} 
                     alt={current.author} 
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain"
                   />
                 )}

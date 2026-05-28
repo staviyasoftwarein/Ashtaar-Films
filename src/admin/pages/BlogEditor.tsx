@@ -277,7 +277,7 @@ function BlogMediaUploader({
     setError(null);
     try {
       const ext = fileExtension(file.name) || (file.type.split('/')[1] ?? (isVideo ? 'mp4' : 'jpg'));
-      const path = `blog/post_${postId}.${ext}`;
+      const path = `blog/post_${postId}-${Date.now()}.${ext}`;
       if (mediaPath && mediaPath !== path) {
         await tryDeleteFromMediaBucket(mediaPath);
       }
@@ -396,4 +396,3 @@ function BlogMediaUploader({
     </div>
   );
 }
-

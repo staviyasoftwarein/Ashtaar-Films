@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import ReactPlayer from 'react-player';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence, useInView } from 'motion/react';
 import { Play, Pause, Volume2, VolumeX, Youtube, BarChart2, Sparkles, ArrowUpRight, Cpu, ArrowLeft, ArrowRight, Hand } from 'lucide-react';
 import { useSetting } from '../hooks/useSetting';
@@ -116,6 +115,8 @@ function Slide1_FeatureFilm({ data }: { data: PortfolioConfig['slide1'] }) {
               <img 
                 src={`https://img.youtube.com/vi/${data.youtubeId}/maxresdefault.jpg`}
                 alt={data.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover opacity-80 group-hover/player:scale-105 transition-transform duration-[2s] ease-out" 
               />
               <div 
@@ -220,6 +221,8 @@ function Slide2_VFXAnime({ data }: { data: PortfolioConfig['slide2'] }) {
                   <img 
                     src={`https://img.youtube.com/vi/${activeTab.youtubeId}/maxresdefault.jpg`}
                     alt={activeTab.subtitle}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover opacity-80 group-hover/player:scale-105 transition-transform duration-[2s] ease-out" 
                   />
                   <div 
@@ -236,6 +239,8 @@ function Slide2_VFXAnime({ data }: { data: PortfolioConfig['slide2'] }) {
               <img 
                 src={activeTab.imagePath ? resolvePortfolioMediaUrl(activeTab.imagePath) : ''}
                 alt={activeTab.subtitle}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-[2s] ease-out" 
               />
             )}
@@ -376,7 +381,7 @@ function Slide3_Music({ data }: { data: PortfolioConfig['slide3'] }) {
               animate={{ rotate: isPlaying ? 360 : 0 }} 
               transition={{ duration: 15, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
             >
-              <img src={thumb} className="w-full h-full object-cover scale-125" />
+              <img src={thumb} alt={track.title} loading="lazy" decoding="async" className="w-full h-full object-cover scale-125" />
               <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors">
                 {!isPlaying 
                   ? <div className="w-8 h-8 md:w-16 md:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20"><Play className="w-3 h-3 md:w-6 md:h-6 text-white ml-0.5 md:ml-1 fill-current" /></div> 
@@ -397,7 +402,7 @@ function Slide3_Music({ data }: { data: PortfolioConfig['slide3'] }) {
             <div className="flex items-center justify-start gap-2 sm:gap-3 w-full">
               <motion.button 
                 whileTap={{ scale: 0.95 }}
-                onClick={() => { window.open(data.playlistUrl, '_blank'); }}
+                onClick={() => { window.open(data.playlistUrl, '_blank', 'noopener,noreferrer'); }}
                 className="flex items-center justify-center gap-2 bg-[#FF0000] text-white py-2.5 px-4 sm:px-5 md:py-4 md:px-8 rounded-full transition-all font-bold text-[10px] sm:text-xs md:text-sm tracking-wide shadow-xl shrink-0 group border-none outline-none cursor-pointer whitespace-nowrap"
               >
                 <Play className="w-4 h-4 fill-current" /> Play Full Playlist
@@ -458,7 +463,7 @@ function Slide3_Music({ data }: { data: PortfolioConfig['slide3'] }) {
               className={`flex items-center gap-3 md:gap-5 p-2 md:p-4 rounded-xl cursor-pointer transition-all duration-300 group hover:bg-white/5 ${activeIdx === i ? 'bg-white/5 shadow-lg' : ''}`}
             >
               <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl overflow-hidden relative shrink-0">
-                <img src={`https://img.youtube.com/vi/${t.youtubeId}/hqdefault.jpg`} className="w-full h-full object-cover opacity-80" />
+                <img src={`https://img.youtube.com/vi/${t.youtubeId}/hqdefault.jpg`} alt={t.title} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-80" />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   {activeIdx === i ? <Equalizer /> : <Play className="w-4 h-4 md:w-6 md:h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity fill-current" />}
                 </div>
@@ -512,6 +517,9 @@ function Slide4_AI({ data }: { data: PortfolioConfig['slide4'] }) {
       <div className="w-full md:w-[55%] lg:w-[60%] h-1/2 md:h-full relative overflow-hidden bg-[#000] flex items-center justify-center p-4 md:p-12">
         <img 
           src={`https://img.youtube.com/vi/${data.youtubeId}/maxresdefault.jpg`}
+          alt=""
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm scale-110" 
         />
         <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-l from-[#030303] via-transparent to-[#030303]/80" />
@@ -528,7 +536,7 @@ function Slide4_AI({ data }: { data: PortfolioConfig['slide4'] }) {
             />
           ) : (
             <>
-              <img src={`https://img.youtube.com/vi/${data.youtubeId}/maxresdefault.jpg`} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover/player:scale-105 transition-transform duration-[3s] ease-out" />
+              <img src={`https://img.youtube.com/vi/${data.youtubeId}/maxresdefault.jpg`} alt={data.subtitle} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover/player:scale-105 transition-transform duration-[3s] ease-out" />
               <div onClick={() => setIsPlaying(true)} className="absolute inset-0 bg-black/40 group-hover/player:bg-black/20 transition-colors duration-500 flex items-center justify-center cursor-pointer">
                 <div className="w-12 h-12 md:w-24 md:h-24 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center group-hover/player:bg-white group-hover/player:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover/player:shadow-[0_0_50px_rgba(255,255,255,0.4)]">
                   <Play className="w-5 h-5 md:w-10 md:h-10 ml-1 text-white group-hover/player:text-black fill-current transition-colors" />

@@ -6,13 +6,12 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
-import Lenis from 'lenis';
 
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
 import AmbientBackground from './components/AmbientBackground';
-import AdminApp from './admin/AdminApp';
 import { usePreloadAssets } from './hooks/usePreloadAssets';
+import { useContentProtection } from './hooks/useContentProtection';
 
 // Eager load fold components
 import Hero from './components/Hero';
@@ -27,6 +26,7 @@ const Careers = lazy(() => import('./components/Careers'));
 const Blog = lazy(() => import('./components/Blog'));
 const About = lazy(() => import('./components/About'));
 const Footer = lazy(() => import('./components/Footer'));
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 
 const SEO = () => (
   <Helmet>
@@ -96,32 +96,40 @@ function PublicSite() {
   // Kick off asset preloading into cache so useAsset() hooks find data instantly.
   // The preloader UI runs its own animation independently.
   usePreloadAssets();
+  useContentProtection();
 
   useEffect(() => {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) return;
 
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
+    let cancelled = false;
+    let lenis: { raf: (time: number) => void; destroy: () => void } | null = null;
+    let rafId: number;
+
+    import('lenis').then(({ default: Lenis }) => {
+      if (cancelled) return;
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 2,
+      });
+
+      function raf(time: number) {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
     });
 
-    let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-
-    rafId = requestAnimationFrame(raf);
-
     return () => {
-      cancelAnimationFrame(rafId);
-      lenis.destroy();
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      lenis?.destroy();
     };
   }, []);
 
@@ -161,7 +169,11 @@ export default function App() {
     <HelmetProvider>
       <Router>
         <Routes>
-          <Route path="/ashtaar-admin/*" element={<AdminApp />} />
+          <Route path="/ashtaar-admin/*" element={
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminApp />
+            </Suspense>
+          } />
           <Route path="/*" element={<PublicSite />} />
         </Routes>
       </Router>

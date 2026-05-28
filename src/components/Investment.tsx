@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { useSetting } from '../hooks/useSetting';
-import { DEFAULT_INVESTMENT } from '../lib/investment';
+import { DEFAULT_INVESTMENT, type InvestmentTier } from '../lib/investment';
+
+function whatsappHref(number: string, tier: InvestmentTier): string {
+  const digits = (number || DEFAULT_INVESTMENT.whatsappNumber).replace(/\D/g, '');
+  const message = `Hey! I wanted to inquire about ${tier.title}.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
 
 export default function Investment() {
   const [showTiers, setShowTiers] = useState(false);
   const { value: investment } = useSetting('investment', DEFAULT_INVESTMENT);
   const tiers = investment.tiers;
+  const whatsappNumber = investment.whatsappNumber || DEFAULT_INVESTMENT.whatsappNumber;
 
   return (
     <section id="investment" className="relative w-full bg-[#fcfbf9] min-h-[100dvh]">
@@ -112,7 +119,9 @@ export default function Investment() {
                   </ul>
                   
                   <a 
-                    href={`mailto:${investment.contactEmail}?subject=Investment Inquiry&body=hey i want to inquire about ${encodeURIComponent(tier.title)}`}
+                    href={whatsappHref(whatsappNumber, tier)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={`flex justify-center items-center gap-2 w-full py-4 rounded-lg uppercase tracking-widest text-xs font-bold transition-all duration-300 text-center ${tier.isDark ? 'bg-[#D4AF37] text-black hover:bg-white' : 'bg-transparent border border-black/20 text-black hover:bg-black hover:text-white'}`}
                   >
                     {tier.btnText}

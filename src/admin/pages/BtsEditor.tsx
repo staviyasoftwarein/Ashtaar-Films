@@ -221,7 +221,7 @@ function BtsTile({
     setError(null);
     try {
       // ✅ Always .webp — EXIF rotation corrected at pixel level before upload
-      const path = `bts/bts${imageId}.webp`;
+      const path = `bts/bts${imageId}-${Date.now()}.webp`;
       if (imagePath && imagePath !== path) await tryDeleteFromMediaBucket(imagePath);
 
       const normalizedBlob = await normalizeOrientation(file);
