@@ -81,7 +81,11 @@ export function useSetting<T>(key: string, fallback: T): {
     };
   }, [key]);
 
-  const save = async (next: T) => {
+const save = async (next: T) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.app_metadata?.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
     const { error: err } = await supabase
       .from('site_settings')
       .upsert({ key, value: next as never }, { onConflict: 'key' });
@@ -91,3 +95,4 @@ export function useSetting<T>(key: string, fallback: T): {
 
   return { value, loading, error, save };
 }
+
