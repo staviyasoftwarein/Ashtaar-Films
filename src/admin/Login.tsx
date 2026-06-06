@@ -5,7 +5,7 @@ import { Button, Field, Input } from './components/ui';
 
 export default function Login() {
   const { signIn } = useAdminAuth();
-  const [username, setUsername] = useState('ashtaarmata-admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,10 +54,10 @@ export default function Login() {
             <Input
               id="username"
               autoFocus
-              autoComplete="username"
+              autoComplete="off"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="ashtaarmata-admin"
+              placeholder="username"
               required
             />
           </Field>
@@ -66,7 +66,7 @@ export default function Login() {
             <Input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

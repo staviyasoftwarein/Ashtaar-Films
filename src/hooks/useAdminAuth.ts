@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 const USERNAME_TO_EMAIL: Record<string, string> = {
-  'ashtaarmata-admin': 'admin@ashtaar',
 };
 
 export function usernameToEmail(username: string): string {

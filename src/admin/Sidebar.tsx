@@ -25,7 +25,7 @@ const NAV: NavItem[] = [
 export default function Sidebar() {
   const { signOut, session } = useAdminAuth();
   const navigate = useNavigate();
-  const username = (session?.user?.user_metadata as { username?: string } | undefined)?.username ?? 'ashtaarmata-admin';
+  const username = (session?.user?.user_metadata as { username?: string } | undefined)?.username ?? '';
 
   return (
     <aside className="w-[240px] shrink-0 border-r border-[var(--color-line)] bg-[var(--color-ink)] flex flex-col h-screen sticky top-0">
