@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback, useRef, type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 
@@ -64,6 +64,49 @@ const LoadingFallback = () => (
   </div>
 );
 
+function DeferredSection({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shouldMount, setShouldMount] = useState(false);
+
+  useEffect(() => {
+    if (shouldMount) return;
+    const node = ref.current;
+    if (!node) return;
+
+    if (!('IntersectionObserver' in window)) {
+      setShouldMount(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldMount(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '700px 0px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldMount]);
+
+  if (shouldMount) {
+    return <>{children}</>;
+  }
+
+  return <div id={id} ref={ref} className={className} aria-hidden="true" />;
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -111,16 +154,48 @@ function HomePage({
     <>
       <Hero onReady={onHeroReady} />
       {showBelowFold ? (
-        <Suspense fallback={<div className="min-h-screen bg-black" />}>
-          <Portfolio />
-          <Testimonials />
-          <About />
-          <Team />
-          <BehindTheScenes />
-          <Investment />
-          <Careers />
-          <Blog />
-        </Suspense>
+        <>
+          <DeferredSection id="portfolio" className="relative md:h-[400vh] h-[100dvh] bg-black">
+            <Suspense fallback={<div className="relative md:h-[400vh] h-[100dvh] bg-black" />}>
+              <Portfolio />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="testimonials" className="min-h-screen bg-[#fafaf9]">
+            <Suspense fallback={<div className="min-h-screen bg-[#fafaf9]" />}>
+              <Testimonials />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="about" className="h-screen bg-black">
+            <Suspense fallback={<div className="h-screen bg-black" />}>
+              <About />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="team" className="md:min-h-screen min-h-screen bg-black">
+            <Suspense fallback={<div className="md:min-h-screen min-h-screen bg-black" />}>
+              <Team />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="bts" className="h-screen bg-black">
+            <Suspense fallback={<div className="h-screen bg-black" />}>
+              <BehindTheScenes />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="investment" className="min-h-screen bg-[#fafaf9]">
+            <Suspense fallback={<div className="min-h-screen bg-[#fafaf9]" />}>
+              <Investment />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="careers" className="min-h-screen bg-black">
+            <Suspense fallback={<div className="min-h-screen bg-black" />}>
+              <Careers />
+            </Suspense>
+          </DeferredSection>
+          <DeferredSection id="blog" className="min-h-screen bg-[#fafaf9]">
+            <Suspense fallback={<div className="min-h-screen bg-[#fafaf9]" />}>
+              <Blog />
+            </Suspense>
+          </DeferredSection>
+        </>
       ) : (
         <div className="min-h-screen bg-black" aria-hidden="true" />
       )}
@@ -208,7 +283,7 @@ function PublicSite() {
       <SEO />
       <ScrollToTop />
       <div className="bg-black min-h-screen text-white selection:bg-[#D4AF37] selection:text-black font-sans">
-        <AmbientBackground />
+        {!loading ? <AmbientBackground /> : null}
         <Navbar />
         <main>
           <Routes>

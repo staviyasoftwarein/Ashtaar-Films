@@ -1,10 +1,9 @@
 import { motion, useSpring, useMotionValue } from 'motion/react';
-import { Instagram, Twitter, Linkedin, Youtube, ArrowRight } from 'lucide-react';
+import { Instagram, Twitter, Youtube, ArrowRight } from 'lucide-react';
 
 const socialLinks = [
   { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/ashtaarfilms/' },
-  { name: 'Twitter', icon: Twitter, href: 'https://twitter.com' },
-  { name: 'LinkedIn', icon: Linkedin, href: 'https://www.linkedin.com/company/ashtaar-films' },
+  { name: 'Twitter', icon: Twitter, href: 'https://x.com/AshtaarFilms' },
   { name: 'YouTube', icon: Youtube, href: 'https://www.youtube.com/@Ashtaarproduction' },
 ];
 

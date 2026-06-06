@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ArrowRight, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
+import { Menu, X, ArrowRight, Instagram, Twitter, Youtube } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const AshtaarLogo = ({ className = "h-8 w-auto" }) => (
@@ -189,8 +189,7 @@ export default function Navbar() {
                <div className="flex items-center gap-8 text-white/50">
                  <a href="https://www.instagram.com/ashtaarfilms/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors"><Instagram size={18} /></a>
                  <a href="https://www.youtube.com/@Ashtaarproduction" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors"><Youtube size={18} /></a>
-                 <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors"><Twitter size={18} /></a>
-                 <a href="https://www.linkedin.com/company/ashtaar-films" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors"><Linkedin size={18} /></a>
+                 <a href="https://x.com/AshtaarFilms" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors"><Twitter size={18} /></a>
                </div>
                
                <p className="text-center xl:text-right">© {new Date().getFullYear()} Ashtaar Films</p>

@@ -111,6 +111,18 @@ export function usePreloadAssets(): State {
 
         await Promise.all(
           items.map(async (it, i) => {
+            if (it.row.kind === 'video' || it.row.kind === 'audio') {
+              preloadCache.set(it.row.key, {
+                url: it.url,
+                kind: it.row.kind,
+                alt: it.row.alt,
+              });
+              loadedBytes[i] = sizes[i] || 1;
+              completedFlags[i] = true;
+              tick();
+              return;
+            }
+
             const { blob, mime } = await fetchWithProgress(
               it.url,
               sizes[i],
