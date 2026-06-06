@@ -10,22 +10,22 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { to: '/ashtaar-admin/hero',        label: 'Hero',         icon: Film },
-  { to: '/ashtaar-admin/portfolio',   label: 'Portfolio',    icon: Briefcase },
-  { to: '/ashtaar-admin/testimonials',label: 'Testimonials', icon: MessageSquare },
-  { to: '/ashtaar-admin/story',       label: 'The Story',    icon: BookOpen },
-  { to: '/ashtaar-admin/team',        label: 'Team',         icon: Users },
-  { to: '/ashtaar-admin/bts',         label: 'Behind the Scenes',icon: Camera },
-  { to: '/ashtaar-admin/careers',     label: 'Careers',      icon: BriefcaseBusiness },
-  { to: '/ashtaar-admin/blog',        label: 'Journal',      icon: Newspaper },
-  { to: '/ashtaar-admin/investment',  label: 'Investment',   icon: Banknote },
-  { to: '/ashtaar-admin/media',       label: 'Media Library',icon: ImageIcon,    disabled: true },
+  { to: '/admin@ashtaar/hero',        label: 'Hero',         icon: Film },
+  { to: '/admin@ashtaar/portfolio',   label: 'Portfolio',    icon: Briefcase },
+  { to: '/admin@ashtaar/testimonials',label: 'Testimonials', icon: MessageSquare },
+  { to: '/admin@ashtaar/story',       label: 'The Story',    icon: BookOpen },
+  { to: '/admin@ashtaar/team',        label: 'Team',         icon: Users },
+  { to: '/admin@ashtaar/bts',         label: 'Behind the Scenes',icon: Camera },
+  { to: '/admin@ashtaar/careers',     label: 'Careers',      icon: BriefcaseBusiness },
+  { to: '/admin@ashtaar/blog',        label: 'Journal',      icon: Newspaper },
+  { to: '/admin@ashtaar/investment',  label: 'Investment',   icon: Banknote },
+  { to: '/admin@ashtaar/media',       label: 'Media Library',icon: ImageIcon,    disabled: true },
 ];
 
 export default function Sidebar() {
   const { signOut, session } = useAdminAuth();
   const navigate = useNavigate();
-  const username = (session?.user?.user_metadata as { username?: string } | undefined)?.username ?? 'admin-ashtaar';
+  const username = (session?.user?.user_metadata as { username?: string } | undefined)?.username ?? 'ashtaarmata-admin';
 
   return (
     <aside className="w-[240px] shrink-0 border-r border-[var(--color-line)] bg-[var(--color-ink)] flex flex-col h-screen sticky top-0">
@@ -113,7 +113,7 @@ export default function Sidebar() {
         </button>
         <button
           type="button"
-          onClick={async () => { await signOut(); navigate('/ashtaar-admin', { replace: true }); }}
+          onClick={async () => { await signOut(); navigate('/admin@ashtaar', { replace: true }); }}
           className="flex w-full items-center gap-3 px-3 h-11 rounded-md text-sm text-[#A3A3A3] hover:text-red-300 hover:bg-red-500/5 transition-colors duration-200"
         >
           <LogOut size={16} strokeWidth={1.5} />

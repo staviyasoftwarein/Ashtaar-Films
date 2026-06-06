@@ -5,7 +5,7 @@ import { Button, Field, Input } from './components/ui';
 
 export default function Login() {
   const { signIn } = useAdminAuth();
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('ashtaarmata-admin');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,7 +57,7 @@ export default function Login() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin-ashtaar"
+              placeholder="ashtaarmata-admin"
               required
             />
           </Field>

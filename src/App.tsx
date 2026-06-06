@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, lazy, Suspense, useCallback, useRef, type ReactNode } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 
 import Preloader from './components/Preloader';
@@ -318,11 +318,12 @@ export default function App() {
     <HelmetProvider>
       <Router>
         <Routes>
-          <Route path="/ashtaar-admin/*" element={
+          <Route path="/admin@ashtaar/*" element={
             <Suspense fallback={<LoadingFallback />}>
               <AdminApp />
             </Suspense>
           } />
+          <Route path="/ashtaar-admin/*" element={<Navigate to="/admin@ashtaar" replace />} />
           <Route path="/*" element={<PublicSite />} />
         </Routes>
       </Router>
