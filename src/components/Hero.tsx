@@ -4,7 +4,11 @@ import { useAsset } from '../hooks/useAsset';
 import { useSetting } from '../hooks/useSetting';
 import { DEFAULT_HERO_FONT, fontFamilyCss } from '../lib/fonts';
 
-export default function Hero() {
+type HeroProps = {
+  onReady?: () => void;
+};
+
+export default function Hero({ onReady }: HeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLHeadingElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -13,7 +17,18 @@ export default function Hero() {
 
   useEffect(() => {
     const video = videoRef.current;
+    let readyFallback: number | undefined;
+
     if (video) {
+      const markReady = () => onReady?.();
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        markReady();
+      } else {
+        video.addEventListener('loadeddata', markReady, { once: true });
+        video.addEventListener('canplay', markReady, { once: true });
+        readyFallback = window.setTimeout(markReady, 5000);
+      }
+
       // Browsers often block autoplay if not muted, but here it is muted.
       // We wrap it in a promise check to avoid "interrupted by pause" errors.
       const playPromise = video.play();
@@ -66,9 +81,10 @@ export default function Hero() {
 
     return () => {
       cancelled = true;
+      if (readyFallback) window.clearTimeout(readyFallback);
       ctx?.revert();
     };
-  }, []);
+  }, [onReady]);
 
   return (
     // Moved overflow-hidden to the parent container to prevent page stretch
@@ -80,6 +96,7 @@ export default function Hero() {
         loop 
         muted 
         playsInline
+        preload="auto"
         // Changed to absolute so it stays inside the Hero section and doesn't break other sections
         className="absolute inset-0 w-full h-full object-cover"
       >

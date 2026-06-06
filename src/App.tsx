@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 
@@ -72,31 +72,101 @@ function ScrollToTop() {
   return null;
 }
 
-function HomePage() {
+function HomePage({
+  onHeroReady,
+  onBelowFoldReady,
+}: {
+  onHeroReady: () => void;
+  onBelowFoldReady: () => void;
+}) {
+  const [showBelowFold, setShowBelowFold] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeoutId: number | undefined;
+    let idleId: number | undefined;
+
+    const reveal = () => {
+      if (cancelled) return;
+      setShowBelowFold(true);
+      onBelowFoldReady();
+    };
+
+    timeoutId = window.setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(reveal, { timeout: 1200 });
+      } else {
+        reveal();
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      if (idleId && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
+    };
+  }, [onBelowFoldReady]);
+
   return (
     <>
-      <Hero />
-      <Suspense fallback={null}>
-        <Portfolio />
-        <Testimonials />
-        <About />
-        <Team />
-        <BehindTheScenes />
-        <Investment />
-        <Careers />
-        <Blog />
-      </Suspense>
+      <Hero onReady={onHeroReady} />
+      {showBelowFold ? (
+        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+          <Portfolio />
+          <Testimonials />
+          <About />
+          <Team />
+          <BehindTheScenes />
+          <Investment />
+          <Careers />
+          <Blog />
+        </Suspense>
+      ) : (
+        <div className="min-h-screen bg-black" aria-hidden="true" />
+      )}
     </>
   );
 }
 
 function PublicSite() {
-  const [loading, setLoading] = useState(true);
+  const { pathname } = useLocation();
+  const [preloaderComplete, setPreloaderComplete] = useState(false);
+  const [heroReady, setHeroReady] = useState(pathname !== '/');
+  const [belowFoldReady, setBelowFoldReady] = useState(pathname !== '/');
+  const loading = !preloaderComplete || !heroReady;
 
   // Kick off asset preloading into cache so useAsset() hooks find data instantly.
   // The preloader UI runs its own animation independently.
   usePreloadAssets();
   useContentProtection();
+
+  const handleHeroReady = useCallback(() => {
+    setHeroReady(true);
+  }, []);
+
+  const handleBelowFoldReady = useCallback(() => {
+    setBelowFoldReady(true);
+  }, []);
+
+  const handlePreloaderComplete = useCallback(() => {
+    setPreloaderComplete(true);
+  }, []);
+
+  useEffect(() => {
+    setHeroReady(pathname !== '/');
+    setBelowFoldReady(pathname !== '/');
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = loading ? 'hidden' : '';
+    if (!loading) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [loading]);
 
   useEffect(() => {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -139,26 +209,30 @@ function PublicSite() {
       <ScrollToTop />
       <div className="bg-black min-h-screen text-white selection:bg-[#D4AF37] selection:text-black font-sans">
         <AmbientBackground />
+        <Navbar />
+        <main>
+          <Routes>
+            <Route path="/" element={
+              <HomePage
+                onHeroReady={handleHeroReady}
+                onBelowFoldReady={handleBelowFoldReady}
+              />
+            } />
+            <Route path="/story" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <About />
+                </Suspense>
+            } />
+          </Routes>
+        </main>
+        {belowFoldReady ? (
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
+        ) : null}
         {loading ? (
-          <Preloader onComplete={() => setLoading(false)} />
-        ) : (
-          <>
-            <Navbar />
-            <main>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/story" element={
-                   <Suspense fallback={<LoadingFallback />}>
-                     <About />
-                   </Suspense>
-                } />
-              </Routes>
-            </main>
-            <Suspense fallback={null}>
-              <Footer />
-            </Suspense>
-          </>
-        )}
+          <Preloader onComplete={handlePreloaderComplete} />
+        ) : null}
       </div>
     </>
   );
